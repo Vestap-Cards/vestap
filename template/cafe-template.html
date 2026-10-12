@@ -40,6 +40,8 @@ dialog[open]{animation:up .25s ease-out}
 .wf{margin:16px 0}
 .wf small{display:block;color:var(--mute)}
 .wf strong{font-size:21px;word-break:break-all}
+.mi{display:block;width:100%;height:auto;margin:12px 0;border-radius:8px;border:1px solid var(--line)}
+.hint{color:var(--mute);font-size:14px;text-align:center;margin:8px 0 0}
 @media (prefers-reduced-motion:reduce){dialog[open]{animation:none}.btn{transition:none}}
 </style>
 </head>
@@ -47,8 +49,8 @@ dialog[open]{animation:up .25s ease-out}
 <main id="app"></main>
 <dialog id="sheet"></dialog>
 <script>
-/* Cafe config. Phase 3 moves this block into one file per cafe. */
-const CAFE = {
+/* Filled in by build.py from cafes/<slug>.json. Do not edit by hand. */
+const CAFE = /*CAFE_START*/{
   name: "Demo Cafe",
   tagline: "Coffee, bakes and slow evenings",
   accent: "#2F5D50",   // the cafe's own color, as a 6-digit hex
@@ -64,7 +66,7 @@ const CAFE = {
     { cat: "Bakes", items: [["Butter croissant", 140], ["Chocolate brownie", 150, "Served warm"]] },
     { cat: "Cold drinks", items: [["Fresh lime soda", 90], ["Iced tea", 130]] }
   ]
-};
+}/*CAFE_END*/;
 /* ---------------------------------------------------------------- */
 const $ = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
 const dlg = document.getElementById("sheet");
@@ -94,6 +96,18 @@ function openSheet(title, body) {
   dlg.showModal();
 }
 function menuSheet() {
+  if (CAFE.menuImages && CAFE.menuImages.length) {
+    const m = $("div");
+    CAFE.menuImages.forEach((src, i) => {
+      const a = $("a"), im = $("img", "mi");
+      a.href = src; a.target = "_blank"; a.rel = "noopener";
+      im.src = src; im.alt = "Menu page " + (i + 1); im.loading = "lazy";
+      a.append(im); m.append(a);
+    });
+    m.append($("p", "hint", "Tap a page to zoom in."));
+    openSheet("Menu", m);
+    return;
+  }
   const b = $("div");
   CAFE.menu.forEach(c => {
     b.append($("div", "cat", c.cat));
@@ -130,11 +144,11 @@ acts.append(CAFE.menuPdf
   ? link(CAFE.menuPdf, "See the menu", "Food, drinks and prices", "main")
   : action("See the menu", "Food, drinks and prices", menuSheet, "main"));
 acts.append(link(CAFE.review, "Leave a Google review", "Tell others what you enjoyed"));
-acts.append(link(CAFE.instagram, "Follow on Instagram", "See what is new at the cafe"));
+acts.append(link(CAFE.instagram, "Follow on Instagram", "See what is new"));
 if (CAFE.whatsapp) acts.append(link("https://wa.me/" + CAFE.whatsapp, "Message on WhatsApp", "Reservations and questions"));
 if (CAFE.wifi) acts.append(action("Connect to WiFi", "Network name and password", wifiSheet));
 
-document.getElementById("app").append(banner, logo, $("h1", 0, CAFE.name), $("p", "tag", CAFE.tagline), acts, $("footer", 0, "Powered by Vestap"));
+document.getElementById("app").append(banner, logo, $("h1", 0, CAFE.name), $("p", "tag", CAFE.tagline), acts, $("footer", 0, "Powered by vestap"));
 </script>
 </body>
 </html>
