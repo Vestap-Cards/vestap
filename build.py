@@ -15,10 +15,25 @@ ROOT = Path(__file__).resolve().parent
 TEMPLATE = ROOT / "template" / "cafe-template.html"
 DIST = ROOT / "dist"
 KINDS = {"cafe": ROOT / "cafes", "restaurant": ROOT / "restaurants"}
+UUID = re.compile(r"^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$")
 RESERVED = {"index", "assets"}
 SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 BLOCK = re.compile(r"/\*CAFE_START\*/.*?/\*CAFE_END\*/", re.S)
+
+
+def analytics_tag():
+    """Reads site.json: {"umamiWebsiteId": "...", "domains": ["vestap.in", ...]}"""
+    p = ROOT / "site.json"
+    site = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
+    uid = (site.get("umamiWebsiteId") or "").strip()
+    if not uid:
+        return ""
+    if not UUID.match(uid):
+        sys.exit("site.json: umamiWebsiteId is not a valid website ID (it looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)")
+    domains = ",".join(site.get("domains") or [])
+    attr = f' data-domains="{html.escape(domains)}"' if domains else ""
+    return f'<script defer src="https://cloud.umami.is/script.js" data-website-id="{uid}"{attr}></script>\n'
 
 
 def load_csv(path):
@@ -80,6 +95,7 @@ def main():
     template = TEMPLATE.read_text(encoding="utf-8")
     if not BLOCK.search(template):
         sys.exit("template is missing the CAFE_START / CAFE_END markers")
+    tag = analytics_tag()
     jobs, failed = [], False
     for kind, src in KINDS.items():
         for path in sorted(src.glob("*.json")) if src.is_dir() else []:
@@ -109,6 +125,8 @@ def main():
     for kind, src, slug, c in jobs:
         data = json.dumps(c, ensure_ascii=False, indent=2).replace("</", "<\\/")
         page = BLOCK.sub(lambda m: "/*CAFE_START*/" + data + "/*CAFE_END*/", template, count=1)
+        if tag:
+            page = page.replace("</head>", tag + "</head>", 1)
         page = page.replace("<title>Cafe</title>", f"<title>{html.escape(c['name'])}</title>", 1)
         out = DIST / kind / slug
         if out.exists():
