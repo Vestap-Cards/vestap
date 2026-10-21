@@ -40,8 +40,11 @@ dialog[open]{animation:up .25s ease-out}
 .wf{margin:16px 0}
 .wf small{display:block;color:var(--mute)}
 .wf strong{font-size:21px;word-break:break-all}
+.mi{display:block;width:100%;height:auto;margin:12px 0;border-radius:8px;border:1px solid var(--line)}
+.hint{color:var(--mute);font-size:14px;text-align:center;margin:8px 0 0}
 @media (prefers-reduced-motion:reduce){dialog[open]{animation:none}.btn{transition:none}}
 </style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="61b7ddbf-3022-4db6-9ae8-c4ba685d7242" data-domains="vestap.in,vestap.vestap-hq.workers.dev"></script>
 </head>
 <body>
 <main id="app"></main>
@@ -123,12 +126,14 @@ document.documentElement.style.setProperty("--accent", hex);
 document.documentElement.style.setProperty("--on-accent", lum > 0.6 ? "#1F1A17" : "#fff");
 
 function fill(el, title, sub) { el.append($("b", 0, title), $("span", 0, sub)); return el; }
-function link(href, title, sub, cls) {
+function link(href, title, sub, cls, ev) {
   const a = fill($("a", "btn " + (cls || "")), title, sub);
+  if (ev) a.dataset.umamiEvent = ev;
   a.href = href; a.target = "_blank"; a.rel = "noopener"; return a;
 }
-function action(title, sub, fn, cls) {
+function action(title, sub, fn, cls, ev) {
   const b = fill($("button", "btn " + (cls || "")), title, sub);
+  if (ev) b.dataset.umamiEvent = ev;
   b.type = "button"; b.onclick = fn; return b;
 }
 function openSheet(title, body) {
@@ -140,6 +145,18 @@ function openSheet(title, body) {
   dlg.showModal();
 }
 function menuSheet() {
+  if (CAFE.menuImages && CAFE.menuImages.length) {
+    const m = $("div");
+    CAFE.menuImages.forEach((src, i) => {
+      const a = $("a"), im = $("img", "mi");
+      a.href = src; a.target = "_blank"; a.rel = "noopener";
+      im.src = src; im.alt = "Menu page " + (i + 1); im.loading = "lazy";
+      a.append(im); m.append(a);
+    });
+    m.append($("p", "hint", "Tap a page to zoom in."));
+    openSheet("Menu", m);
+    return;
+  }
   const b = $("div");
   CAFE.menu.forEach(c => {
     b.append($("div", "cat", c.cat));
@@ -160,7 +177,7 @@ function wifiSheet() {
   const copy = action("Copy password", "Then paste it in your WiFi settings", async () => {
     try { await navigator.clipboard.writeText(CAFE.wifi.password); copy.querySelector("b").textContent = "Copied"; }
     catch (e) { copy.querySelector("span").textContent = "Press and hold the password to copy it"; }
-  }, "main");
+  }, "main", "wifi-copy");
   b.append(a, p, copy);
   openSheet("WiFi", b);
 }
@@ -173,12 +190,12 @@ if (CAFE.logo) logo.style.backgroundImage = "url('" + CAFE.logo + "')";
 
 const acts = $("div", "actions");
 acts.append(CAFE.menuPdf
-  ? link(CAFE.menuPdf, "See the menu", "Food, drinks and prices", "main")
-  : action("See the menu", "Food, drinks and prices", menuSheet, "main"));
-acts.append(link(CAFE.review, "Leave a Google review", "Tell others what you enjoyed"));
-acts.append(link(CAFE.instagram, "Follow on Instagram", "See what is new"));
-if (CAFE.whatsapp) acts.append(link("https://wa.me/" + CAFE.whatsapp, "Message on WhatsApp", "Reservations and questions"));
-if (CAFE.wifi) acts.append(action("Connect to WiFi", "Network name and password", wifiSheet));
+  ? link(CAFE.menuPdf, "See the menu", "Food, drinks and prices", "main", "menu")
+  : action("See the menu", "Food, drinks and prices", menuSheet, "main", "menu"));
+acts.append(link(CAFE.review, "Leave a Google review", "Tell others what you enjoyed", "", "review"));
+acts.append(link(CAFE.instagram, "Follow on Instagram", "See what is new", "", "instagram"));
+if (CAFE.whatsapp) acts.append(link("https://wa.me/" + CAFE.whatsapp, "Message on WhatsApp", "Reservations and questions", "", "whatsapp"));
+if (CAFE.wifi) acts.append(action("Connect to WiFi", "Network name and password", wifiSheet, "", "wifi"));
 
 document.getElementById("app").append(banner, logo, $("h1", 0, CAFE.name), $("p", "tag", CAFE.tagline), acts, $("footer", 0, "Powered by vestap"));
 </script>
